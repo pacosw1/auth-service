@@ -1,0 +1,51 @@
+version: "3.3"
+
+services:
+  redis:
+    image: redis:latest
+    restart: always
+    command: bash -c "redis-server" --appendonly yes
+    volumes:
+      - redis-data:/var/lib/redis
+    ports:
+      - 4200:6379
+    # networks:
+    #   - back-end
+  db:
+    image: mysql:latest
+    restart: always
+    volumes:
+      - sql-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: monolith_db
+    ports:
+      - 4100:3306
+    # networks:
+    #   - back-end
+  #auth-service:
+  #  build: ./
+  #  restart: always
+  #  environment:
+  #    PORT: 9000
+    #   WAIT_HOSTS: db:3306, redis:6379
+  #  ports:
+    #  - 9000:9000
+    # networks:
+    #   - back-end
+    #depends_on:
+    #  - redis
+   #   - db
+volumes:
+  sql-data:
+  redis-data:
+
+  # network:
+  #   back-end:
+# docker run -d --name=redis --network=dev-network -p 7001:6347 redis
+
+# docker run -d --name=mysql-db --network=dev-network -p 3679:3679 mysql
+
+# docker run -d --name go-ecommerce --network=dev-network -p 5000:5000 --link redis:redis --link mysql-db:mysql-db go-ecommerce
+
+#run docker-compose up    to run stack

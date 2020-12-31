@@ -1,0 +1,107 @@
+
+
+syntax = "proto3";
+package proto;
+
+
+
+service UserPrivilegeControl {
+    rpc getPrivileges(UserID) returns (PrivilegeList) {}
+    rpc setPrivileges(PrivilegeList) returns (PrivilegeList) {}
+}
+
+
+enum Access {
+    ADMIN = 0;
+    BASIC = 1;
+}
+
+message UserID {
+    int64 value = 1;
+}
+
+
+message PrivilegeList {
+    int64 userID = 1;
+    repeated Access privilege = 2;
+}
+
+//CRITICAL service
+service Sessions {
+    rpc GetSession(SessionID) returns (Session) {}
+    rpc CreateSession(SessionInput) returns (SessionID) {}
+}
+
+message SessionInput {
+    int64 userID = 1;
+
+}
+
+message SessionID {
+    string value = 1;
+}
+
+message Session {
+    string id = 1;
+    int64 userID = 2;
+}
+
+//auth service (CRITICAL)
+service Auth {
+
+    rpc CreateUser(SignUpData) returns (NewUser) {};
+    rpc UpdateEmail(Email) returns (Response) {};
+    rpc Authenticate(LoginData) returns (AuthResponse) {};
+    rpc UpdatePassword(PasswordReset) returns (Response) {};
+    rpc VerifyEmail(Email) returns (Response) {};
+    rpc GetUserData(UserID) returns (UserData) {};
+
+}
+
+message NewUser {
+    int64 id = 1;
+}
+
+message PasswordReset {
+    string email = 1;
+    string NewPassword = 2;
+    string Confirm = 3;
+}
+
+message UserData {
+    string uuid = 1;
+    string email = 2;
+    string username = 3;
+    bool active = 4;
+}
+
+message Email {
+    string email = 1;
+}
+
+message SignUpData {
+    string username = 1;
+    string password = 2;
+    string email = 3;
+    string name = 4;
+}
+
+message LoginData {
+    string username = 1;
+    string password = 2;
+}
+message Error {
+    uint32 code = 1;
+    string message = 2;
+}
+message AuthResponse {
+    int64 id = 1;
+}
+message Response {
+    string message = 2;
+}
+
+
+
+
+
