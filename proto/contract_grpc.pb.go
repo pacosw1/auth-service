@@ -255,7 +255,7 @@ var _Sessions_serviceDesc = grpc.ServiceDesc{
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthClient interface {
-	CreateUser(ctx context.Context, in *SignUpData, opts ...grpc.CallOption) (*NewUser, error)
+	CreateUser(ctx context.Context, in *SignUpData, opts ...grpc.CallOption) (*NewUserAuth, error)
 	UpdateEmail(ctx context.Context, in *Email, opts ...grpc.CallOption) (*Response, error)
 	Authenticate(ctx context.Context, in *LoginData, opts ...grpc.CallOption) (*AuthResponse, error)
 	UpdatePassword(ctx context.Context, in *PasswordReset, opts ...grpc.CallOption) (*Response, error)
@@ -271,8 +271,8 @@ func NewAuthClient(cc grpc.ClientConnInterface) AuthClient {
 	return &authClient{cc}
 }
 
-func (c *authClient) CreateUser(ctx context.Context, in *SignUpData, opts ...grpc.CallOption) (*NewUser, error) {
-	out := new(NewUser)
+func (c *authClient) CreateUser(ctx context.Context, in *SignUpData, opts ...grpc.CallOption) (*NewUserAuth, error) {
+	out := new(NewUserAuth)
 	err := c.cc.Invoke(ctx, "/proto.Auth/CreateUser", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -329,7 +329,7 @@ func (c *authClient) GetUserData(ctx context.Context, in *UserID, opts ...grpc.C
 // All implementations must embed UnimplementedAuthServer
 // for forward compatibility
 type AuthServer interface {
-	CreateUser(context.Context, *SignUpData) (*NewUser, error)
+	CreateUser(context.Context, *SignUpData) (*NewUserAuth, error)
 	UpdateEmail(context.Context, *Email) (*Response, error)
 	Authenticate(context.Context, *LoginData) (*AuthResponse, error)
 	UpdatePassword(context.Context, *PasswordReset) (*Response, error)
@@ -342,7 +342,7 @@ type AuthServer interface {
 type UnimplementedAuthServer struct {
 }
 
-func (UnimplementedAuthServer) CreateUser(context.Context, *SignUpData) (*NewUser, error) {
+func (UnimplementedAuthServer) CreateUser(context.Context, *SignUpData) (*NewUserAuth, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateUser not implemented")
 }
 func (UnimplementedAuthServer) UpdateEmail(context.Context, *Email) (*Response, error) {

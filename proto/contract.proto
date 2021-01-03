@@ -49,7 +49,7 @@ message Session {
 //auth service (CRITICAL)
 service Auth {
 
-    rpc CreateUser(SignUpData) returns (NewUser) {};
+    rpc CreateUser(SignUpData) returns (NewUserAuth) {};
     rpc UpdateEmail(Email) returns (Response) {};
     rpc Authenticate(LoginData) returns (AuthResponse) {};
     rpc UpdatePassword(PasswordReset) returns (Response) {};
@@ -58,12 +58,23 @@ service Auth {
 
 }
 
-message NewUser {
+
+enum accountErrors {
+    NO_ERROR = 0;
+    EMAIL_TAKEN = 1;
+    USERNAME_TAKEN = 2;
+    INVALID_EMAIL = 3;
+    INVALID_USERNAME = 4;
+    INVALID_PASSWORD = 5;
+}
+
+message NewUserAuth {
     int64 id = 1;
+    accountErrors error = 2;
 }
 
 message PasswordReset {
-    string email = 1;
+    string UUID = 1;
     string NewPassword = 2;
     string Confirm = 3;
 }
@@ -96,10 +107,17 @@ message Error {
 }
 message AuthResponse {
     int64 id = 1;
+    bool correct = 2;
 }
 message Response {
     string message = 2;
 }
+
+
+
+
+
+
 
 
 

@@ -19,7 +19,7 @@ func (s *Server) ResetPassword(ctx context.Context, input *pb.PasswordReset) (*p
 		Message: "Password reset successfully",
 	}
 
-	err := s.User.ResetPassword(input.NewPassword, input.Confirm, input.Email)
+	err := s.User.ResetPassword(input.NewPassword, input.Confirm, input.UUID)
 
 	if err != nil {
 		return nil, err
@@ -30,20 +30,24 @@ func (s *Server) ResetPassword(ctx context.Context, input *pb.PasswordReset) (*p
 }
 
 //CreateUser creates a user in database
-func (s *Server) CreateUser(ctx context.Context, input *pb.SignUpData) (*pb.NewUser, error) {
+func (s *Server) CreateUser(ctx context.Context, input *pb.SignUpData) (*pb.NewUserAuth, error) {
 
 	//validate email
 	validEmail := s.User.IsValidEmail(input.Email)
 
 	if !validEmail {
-		return nil, errors.New("Invalid Email")
+		return &pb.NewUserAuth{
+			Error: pb.AccountErrors_INVALID_EMAIL,
+		}, nil
 	}
 
 	//validate password length
 	valid := s.User.ValidatePassword(input.Password)
 
 	if !valid {
-		return nil, errors.New("Invalid Password, Must be at least etc")
+		return &pb.NewUserAuth{
+			Error: pb.AccountErrors_INVALID_PASSWORD,
+		}, nil
 	}
 
 	//hash password if valid
@@ -56,13 +60,26 @@ func (s *Server) CreateUser(ctx context.Context, input *pb.SignUpData) (*pb.NewU
 	//update password input
 	input.Password = string(hash)
 
-	userID, err := s.User.CreateUser(input)
+	userID, emailTaken, usernameTaken, err := s.User.CreateUser(input)
 
 	if err != nil {
 		return nil, err
 	}
 
-	resp := &pb.NewUser{
+	//error handling
+	if emailTaken {
+		return &pb.NewUserAuth{
+			Error: pb.AccountErrors_EMAIL_TAKEN,
+		}, nil
+	}
+
+	if usernameTaken {
+		return &pb.NewUserAuth{
+			Error: pb.AccountErrors_USERNAME_TAKEN,
+		}, nil
+	}
+
+	resp := &pb.NewUserAuth{
 		Id: userID,
 	}
 
@@ -89,15 +106,15 @@ func (s *Server) VerifyEmail(ctx context.Context, input *pb.Email) (*pb.Response
 //Authenticate authenticates user credentials
 func (s *Server) Authenticate(ctx context.Context, input *pb.LoginData) (*pb.AuthResponse, error) {
 
-	userID, err := s.User.Authenticate(input)
+	userID, correct, err := s.User.Authenticate(input)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.New("Internal Server Error")
 	}
 
-	//prepare pb response
 	pbResonse := &pb.AuthResponse{
-		Id: userID,
+		Id:      userID,
+		Correct: correct,
 	}
 
 	return pbResonse, nil

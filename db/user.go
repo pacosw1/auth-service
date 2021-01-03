@@ -26,7 +26,7 @@ type UserModel struct {
 // }
 
 //CreateUser creates a new user given valid sign up details
-func (m *UserModel) CreateUser(input *pb.SignUpData) (int64, error) {
+func (m *UserModel) CreateUser(input *pb.SignUpData) (int64, bool, bool, error) {
 
 	uuid, _ := uuid.NewRandom()
 
@@ -43,17 +43,23 @@ func (m *UserModel) CreateUser(input *pb.SignUpData) (int64, error) {
 				msg := mySQLError.Message
 
 				if CheckError(msg, "username") {
-					return 0, errors.New("Username '" + input.Username + "' is already taken")
+					return 0, false, true, nil
 				} else if CheckError(msg, "email") {
-					return 0, errors.New("Email '" + input.Email + "' is already taken")
+					return 0, true, false, nil
 				}
 
 			}
 		}
-		return 0, err
+		return 0, false, false, err
 	}
 
-	return res.LastInsertId()
+	id, err := res.LastInsertId()
+
+	if err != nil {
+		return 0, false, false, err
+	}
+
+	return id, false, false, nil
 }
 
 //CheckError checks errors
@@ -88,7 +94,7 @@ func (m *UserModel) EmailExists(email *pb.Email) bool {
 }
 
 //ResetPassword resets password for given user's email
-func (m *UserModel) ResetPassword(newPass, newPassConfirm, email string) error {
+func (m *UserModel) ResetPassword(newPass, newPassConfirm, uuid string) error {
 
 	//check that passwords match
 	if newPass != newPassConfirm {
@@ -110,9 +116,9 @@ func (m *UserModel) ResetPassword(newPass, newPassConfirm, email string) error {
 	}
 
 	//update password hash in database
-	query := "UPDATE USERS SET hashed_password = ? WHERE email = ?"
+	query := "UPDATE USERS SET hashed_password = ? WHERE uuid = ?"
 
-	_, err = m.DB.Exec(query, newPassHash, email)
+	_, err = m.DB.Exec(query, newPassHash, uuid)
 
 	if err != nil {
 		return err
@@ -135,7 +141,7 @@ func (m *UserModel) ValidatePassword(password string) bool {
 }
 
 //Authenticate creates a new user given valid sign up details
-func (m *UserModel) Authenticate(input *pb.LoginData) (int64, error) {
+func (m *UserModel) Authenticate(input *pb.LoginData) (int64, bool, error) {
 
 	// Retrieve the id and hashed password associated with the given email. If no
 	// matching email exists, or the user is not active, we return the
@@ -147,22 +153,21 @@ func (m *UserModel) Authenticate(input *pb.LoginData) (int64, error) {
 	err := row.Scan(&id, &hashedPassword)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return 0, errors.New("Invalid username or password")
+			return 0, false, nil
 		}
-		return 0, err
-
+		return 0, false, err
 	}
 	// Check whether the hashed password and plain-text password provided match. // If they don't, we return the ErrInvalidCredentials error.
 	err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(input.Password))
 	if err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			return 0, errors.New("Invalid username or password")
+			return 0, false, nil
 		}
-		return 0, err
+		return 0, false, err
 
 	}
 	// Otherwise, the password is correct. Return the user ID.
-	return id, nil
+	return id, true, nil
 
 }
 
